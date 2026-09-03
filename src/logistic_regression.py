@@ -1,72 +1,15 @@
-# import pandas as pd
-
-# # Load the dataset
-# data = pd.read_csv("dataset/data.csv")
-
-# # Display first 5 rows
-# print("First 5 rows:")
-# print(data.head())
-
-# # Display dataset shape
-# print("\nDataset Shape:")
-# print(data.shape)
-
-# # Display information about the dataset
-# print("\nDataset Information:")
-# print(data.info())
-
-# # Check missing values
-# print("\nMissing Values:")
-# print(data.isnull().sum())
-
-# # Check target class distribution
-# print("\nDiagnosis Distribution:")
-# print(data["diagnosis"].value_counts())
-
-# import pandas as pd
-# from sklearn.model_selection import train_test_split
-
-# # Load the dataset
-# data = pd.read_csv("dataset/data.csv")
-
-# # Remove unnecessary columns
-# data = data.drop(columns=["id", "Unnamed: 32"])
-
-# # Separate features and target
-# X = data.drop(columns=["diagnosis"])
-# y = data["diagnosis"]
-
-# # Split the dataset into training and testing sets
-# X_train, X_test, y_train, y_test = train_test_split(
-#     X,
-#     y,
-#     test_size=0.2,
-#     random_state=42,
-#     stratify=y
-# )
-
-# # Display the results
-# print("Feature shape:", X.shape)
-# print("Target shape:", y.shape)
-
-# print("\nTraining data:")
-# print("X_train:", X_train.shape)
-# print("y_train:", y_train.shape)
-
-# print("\nTesting data:")
-# print("X_test:", X_test.shape)
-# print("y_test:", y_test.shape)
-
-# print("\nTraining target distribution:")
-# print(y_train.value_counts())
-
-# print("\nTesting target distribution:")
-# print(y_test.value_counts())
-
 import pandas as pd
+import matplotlib.pyplot as plt
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+    precision_score,
+    recall_score
+)
 
 # Load the dataset
 data = pd.read_csv("dataset/data.csv")
@@ -105,12 +48,30 @@ model.fit(X_train_scaled, y_train)
 # Make predictions on the test data
 y_pred = model.predict(X_test_scaled)
 
-# Display the results
-print("Training data shape:", X_train_scaled.shape)
-print("Testing data shape:", X_test_scaled.shape)
+# Calculate confusion matrix
+cm = confusion_matrix(y_test, y_pred, labels=["B", "M"])
 
-print("\nFirst 20 Predictions:")
-print(y_pred[:20])
+# Calculate precision and recall
+precision = precision_score(y_test, y_pred, pos_label="M")
+recall = recall_score(y_test, y_pred, pos_label="M")
 
-print("\nFirst 20 Actual Values:")
-print(y_test.values[:20])
+# Display evaluation results
+print("Confusion Matrix:")
+print(cm)
+
+print("\nPrecision:", precision)
+print("Recall:", recall)
+
+# Create confusion matrix plot
+display = ConfusionMatrixDisplay(
+    confusion_matrix=cm,
+    display_labels=["Benign (B)", "Malignant (M)"]
+)
+
+display.plot()
+plt.title("Logistic Regression - Confusion Matrix")
+plt.tight_layout()
+
+# Save the plot
+plt.savefig("outputs/plots/confusion_matrix.png")
+plt.show()
