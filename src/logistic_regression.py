@@ -1,4 +1,84 @@
+# import pandas as pd
+# import matplotlib.pyplot as plt
+
+# from sklearn.model_selection import train_test_split
+# from sklearn.preprocessing import StandardScaler
+# from sklearn.linear_model import LogisticRegression
+# from sklearn.metrics import (
+#     confusion_matrix,
+#     ConfusionMatrixDisplay,
+#     precision_score,
+#     recall_score
+# )
+
+# # Load the dataset
+# data = pd.read_csv("dataset/data.csv")
+
+# # Remove unnecessary columns
+# data = data.drop(columns=["id", "Unnamed: 32"])
+
+# # Separate features and target
+# X = data.drop(columns=["diagnosis"])
+# y = data["diagnosis"]
+
+# # Split the dataset into training and testing sets
+# X_train, X_test, y_train, y_test = train_test_split(
+#     X,
+#     y,
+#     test_size=0.2,
+#     random_state=42,
+#     stratify=y
+# )
+
+# # Create the scaler
+# scaler = StandardScaler()
+
+# # Fit the scaler on training data and transform it
+# X_train_scaled = scaler.fit_transform(X_train)
+
+# # Transform testing data using the same scaler
+# X_test_scaled = scaler.transform(X_test)
+
+# # Create the Logistic Regression model
+# model = LogisticRegression(random_state=42)
+
+# # Train the model
+# model.fit(X_train_scaled, y_train)
+
+# # Make predictions on the test data
+# y_pred = model.predict(X_test_scaled)
+
+# # Calculate confusion matrix
+# cm = confusion_matrix(y_test, y_pred, labels=["B", "M"])
+
+# # Calculate precision and recall
+# precision = precision_score(y_test, y_pred, pos_label="M")
+# recall = recall_score(y_test, y_pred, pos_label="M")
+
+# # Display evaluation results
+# print("Confusion Matrix:")
+# print(cm)
+
+# print("\nPrecision:", precision)
+# print("Recall:", recall)
+
+# # Create confusion matrix plot
+# display = ConfusionMatrixDisplay(
+#     confusion_matrix=cm,
+#     display_labels=["Benign (B)", "Malignant (M)"]
+# )
+
+# display.plot()
+# plt.title("Logistic Regression - Confusion Matrix")
+# plt.tight_layout()
+
+# # Save the plot
+# plt.savefig("outputs/plots/confusion_matrix.png")
+# plt.show()
+
+
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
@@ -8,7 +88,9 @@ from sklearn.metrics import (
     confusion_matrix,
     ConfusionMatrixDisplay,
     precision_score,
-    recall_score
+    recall_score,
+    roc_curve,
+    roc_auc_score
 )
 
 # Load the dataset
@@ -21,7 +103,7 @@ data = data.drop(columns=["id", "Unnamed: 32"])
 X = data.drop(columns=["diagnosis"])
 y = data["diagnosis"]
 
-# Split the dataset into training and testing sets
+# Split the dataset
 X_train, X_test, y_train, y_test = train_test_split(
     X,
     y,
@@ -30,39 +112,36 @@ X_train, X_test, y_train, y_test = train_test_split(
     stratify=y
 )
 
-# Create the scaler
+# Standardize the features
 scaler = StandardScaler()
-
-# Fit the scaler on training data and transform it
 X_train_scaled = scaler.fit_transform(X_train)
-
-# Transform testing data using the same scaler
 X_test_scaled = scaler.transform(X_test)
 
-# Create the Logistic Regression model
+# Create and train Logistic Regression model
 model = LogisticRegression(random_state=42)
-
-# Train the model
 model.fit(X_train_scaled, y_train)
 
-# Make predictions on the test data
+# Predict classes
 y_pred = model.predict(X_test_scaled)
 
-# Calculate confusion matrix
+# Predict probabilities
+y_prob = model.predict_proba(X_test_scaled)[:, 1]
+
+# --------------------------------------------------
+# CONFUSION MATRIX
+# --------------------------------------------------
+
 cm = confusion_matrix(y_test, y_pred, labels=["B", "M"])
 
-# Calculate precision and recall
 precision = precision_score(y_test, y_pred, pos_label="M")
 recall = recall_score(y_test, y_pred, pos_label="M")
 
-# Display evaluation results
 print("Confusion Matrix:")
 print(cm)
 
 print("\nPrecision:", precision)
 print("Recall:", recall)
 
-# Create confusion matrix plot
 display = ConfusionMatrixDisplay(
     confusion_matrix=cm,
     display_labels=["Benign (B)", "Malignant (M)"]
@@ -71,7 +150,75 @@ display = ConfusionMatrixDisplay(
 display.plot()
 plt.title("Logistic Regression - Confusion Matrix")
 plt.tight_layout()
-
-# Save the plot
 plt.savefig("outputs/plots/confusion_matrix.png")
+plt.show()
+
+# --------------------------------------------------
+# ROC CURVE AND ROC-AUC
+# --------------------------------------------------
+
+fpr, tpr, thresholds = roc_curve(y_test, y_prob, pos_label="M")
+roc_auc = roc_auc_score(
+    (y_test == "M").astype(int),
+    y_prob
+)
+
+print("\nROC-AUC Score:", roc_auc)
+
+plt.figure()
+plt.plot(fpr, tpr, label=f"ROC Curve (AUC = {roc_auc:.3f})")
+plt.plot([0, 1], [0, 1], linestyle="--")
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curve")
+plt.legend()
+plt.tight_layout()
+plt.savefig("outputs/plots/roc_curve.png")
+plt.show()
+
+# --------------------------------------------------
+# THRESHOLD TUNING
+# --------------------------------------------------
+
+print("\nThreshold Tuning:")
+print("-" * 45)
+
+for threshold in [0.3, 0.4, 0.5, 0.6, 0.7]:
+    y_threshold = np.where(y_prob >= threshold, "M", "B")
+
+    threshold_precision = precision_score(
+        y_test,
+        y_threshold,
+        pos_label="M"
+    )
+
+    threshold_recall = recall_score(
+        y_test,
+        y_threshold,
+        pos_label="M"
+    )
+
+    print(
+        f"Threshold: {threshold:.1f} | "
+        f"Precision: {threshold_precision:.3f} | "
+        f"Recall: {threshold_recall:.3f}"
+    )
+
+# --------------------------------------------------
+# SIGMOID FUNCTION
+# --------------------------------------------------
+
+z = np.linspace(-10, 10, 200)
+
+sigmoid = 1 / (1 + np.exp(-z))
+
+plt.figure()
+plt.plot(z, sigmoid)
+plt.axhline(0.5, linestyle="--")
+plt.axvline(0, linestyle="--")
+plt.xlabel("z")
+plt.ylabel("Sigmoid Probability")
+plt.title("Sigmoid Function")
+plt.tight_layout()
+plt.savefig("outputs/plots/sigmoid_curve.png")
 plt.show()
