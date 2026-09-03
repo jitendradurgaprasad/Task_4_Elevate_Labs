@@ -63,10 +63,10 @@
 # print("\nTesting target distribution:")
 # print(y_test.value_counts())
 
-
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
 
 # Load the dataset
 data = pd.read_csv("dataset/data.csv")
@@ -96,12 +96,21 @@ X_train_scaled = scaler.fit_transform(X_train)
 # Transform testing data using the same scaler
 X_test_scaled = scaler.transform(X_test)
 
+# Create the Logistic Regression model
+model = LogisticRegression(random_state=42)
+
+# Train the model
+model.fit(X_train_scaled, y_train)
+
+# Make predictions on the test data
+y_pred = model.predict(X_test_scaled)
+
 # Display the results
-print("Original training data shape:", X_train.shape)
-print("Original testing data shape:", X_test.shape)
+print("Training data shape:", X_train_scaled.shape)
+print("Testing data shape:", X_test_scaled.shape)
 
-print("\nScaled training data shape:", X_train_scaled.shape)
-print("Scaled testing data shape:", X_test_scaled.shape)
+print("\nFirst 20 Predictions:")
+print(y_pred[:20])
 
-print("\nFirst 5 rows of scaled training data:")
-print(X_train_scaled[:5])
+print("\nFirst 20 Actual Values:")
+print(y_test.values[:20])
